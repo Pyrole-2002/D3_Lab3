@@ -56,11 +56,11 @@ function iDaysLater(dateStr, i) {
 
 var svg = d3.select("body").selectAll("svg")
     .data(d3.range(2023, 2024))
-  .enter().append("svg")
+    .enter().append("svg")
     .attr("width", width)
     .attr("height", height)
     .attr("class", "RdYlGn")
-  .append("g")
+    .append("g")
     .attr("transform", "translate(" + ((width - cellSize * 53) / 2) + "," + (height - cellSize * 7 - 1) + ")");
 
   
@@ -129,7 +129,105 @@ d3.csv("https://raw.githubusercontent.com/Pyrole-2002/D3_Lab3/main/yearly.csv", 
       spanDuration.push(d);
     }
   })
-  console.log(spanDuration);
+  console.log("spanDuration", spanDuration);
+
+  var ug1 = spanDuration.filter((obj) => obj.Batches.includes("ug1"));
+  var ug2 = spanDuration.filter((obj) => obj.Batches.includes("ug2"));
+  var ug3 = spanDuration.filter((obj) => obj.Batches.includes("ug3"));
+  var ug4 = spanDuration.filter((obj) => obj.Batches.includes("ug4"));
+  var ug5 = spanDuration.filter((obj) => obj.Batches.includes("ug5"));
+
+  var selectionOptions = [
+    { value: "ug1", text: "UG1" },
+    { value: "ug2", text: "UG2" },
+    { value: "ug3", text: "UG3" },
+    { value: "ug4", text: "UG4" },
+    { value: "ug5", text: "UG5" },
+  ];
+
+  var form = d3.select("body")
+    .append("form")
+  form.append("label")
+    .attr("for", "framework")
+    .text("Select Batch: ");
+  var select = form.append("select")
+    .attr("id", "framework")
+    .on("change", onchangeHandle);
+  select.selectAll("option")
+    .data(selectionOptions)
+    .enter().append("option")
+    .attr("value", function (d) { return d.value; })
+    .text(function (d) { return d.text; });
+  
+  var batchData = {
+    "ug1": ug1,
+    "ug2": ug2,
+    "ug3": ug3,
+    "ug4": ug4,
+    "ug5": ug5
+  };
+  function onchangeHandle() {
+    rect._groups[0].forEach(e => {
+      e.classList.remove("q0-5", "q1-5", "q2-5", "q3-5", "q4-5")
+    });
+    var selectValue = d3.select(this).property("value");
+    var data = d3.nest()
+      .key(function (d) { return d.Start; })
+      .rollup(function (d) {
+        let value = 0;
+        d.forEach(function (obj) {
+          if (obj.Type == "Holidays") {
+            value = 0;
+          } else if (obj.Type == "Important Dates") {
+            value = 0.2;
+          } else if (obj.Type == "Evaluations") {
+            value = 0.4;
+          } else if (obj.Type == "Institute Events") {
+            value = 0.6;
+          } else if (obj.Type == "Academic Events") {
+            value = 0.8;
+          }
+        });
+        return value;
+      })
+      .map(batchData[selectValue]);
+      rect.filter(function (d) { return data.has(d); })
+      .attr("class", function (d) {
+        return "day " + color(data.get(d));
+      })
+      .on("mouseover", function (d) {
+        d3.select("body")
+          .style("cursor", "pointer")
+          .append("div")
+          .attr("class", "tooltip")
+          .style("position", "absolute")
+          .style("left", "1000px")
+          .style("top", "200px")
+          .style("z-index", "10")
+          .style("opacity", 1)
+          .style("background", "rgba(220, 220, 220, 1)")
+          .style("padding", "10px")
+          .style("color", "#262626")
+          .style("border-radius", "5px")
+          .style("border", "1px solid rgba(0, 0, 0, 0.24)")
+          .style("box-shadow", "rgba(0, 0, 0, 0.24) 0px 3px 8px")
+          .html(
+            `
+              <h2 style="font-size:25px">
+                ${spanDuration.find(x => x.Start === d).Activity}
+              </h2>
+              <h3 style="font-size:15px">
+                ${spanDuration.find(x => x.Start === d).Type}
+              </h3>
+            `
+          );
+      })
+      .on("mouseout", function () {
+        d3.select("body").style("cursor", "default");
+        d3.select(".tooltip").remove();
+      });
+  }
+
   var data = d3.nest()
     .key(function(d) { return d.Start; })
     .rollup(function(d) {
@@ -149,7 +247,7 @@ d3.csv("https://raw.githubusercontent.com/Pyrole-2002/D3_Lab3/main/yearly.csv", 
       });
       return value;
     })
-    .map(spanDuration);
+    .map(ug1);
 
   rect.filter(function(d) { return data.has(d); })
       .attr("class", function(d) {
