@@ -8,42 +8,36 @@ body {
 }
 
 .day {
-  fill: #fff;
-  stroke: #ccc;
+  fill: #dddddd;
+  stroke: #373737;
 }
 
 .month {
   fill: none;
   stroke: #000;
-  stroke-width: 2px;
+  stroke-width: 3px;
 }
 
-.RdYlGn .q0-11{fill:rgb(165,0,38)}
-.RdYlGn .q1-11{fill:rgb(215,48,39)}
-.RdYlGn .q2-11{fill:rgb(244,109,67)}
-.RdYlGn .q3-11{fill:rgb(253,174,97)}
-.RdYlGn .q4-11{fill:rgb(254,224,139)}
-.RdYlGn .q5-11{fill:rgb(255,255,191)}
-.RdYlGn .q6-11{fill:rgb(217,239,139)}
-.RdYlGn .q7-11{fill:rgb(166,217,106)}
-.RdYlGn .q8-11{fill:rgb(102,189,99)}
-.RdYlGn .q9-11{fill:rgb(26,152,80)}
-.RdYlGn .q10-11{fill:rgb(0,104,55)}
+.RdYlGn .q0-5{fill:rgb(255, 56, 102)}
+.RdYlGn .q1-5{fill:rgb(94, 58, 255)}
+.RdYlGn .q2-5{fill:rgb(0, 221, 255)}
+.RdYlGn .q3-5{fill:rgb(0, 255, 153)}
+.RdYlGn .q4-5{fill:rgb(255, 255, 147)}
 
 </style>
 <body>
 <script src="https://d3js.org/d3.v4.min.js"></script>
 <script>
 
-var width = 960,
-    height = 136,
-    cellSize = 17; // cell size
+var width = 2000,
+    height = 400,
+    cellSize = 30; // cell size
 var percent = d3.format(".1%"),
     format = d3.timeFormat("%Y-%m-%d");
 
 var color = d3.scaleQuantize()
     .domain([0, 1])
-    .range(d3.range(5).map(function(d) { return "q" + d + "-11"; }));
+    .range(["q0-5", "q1-5", "q2-5", "q3-5", "q4-5"]);
 
 function getNextDate(dateStr) {
   var date = new Date(dateStr);
@@ -69,14 +63,39 @@ var svg = d3.select("body").selectAll("svg")
   .append("g")
     .attr("transform", "translate(" + ((width - cellSize * 53) / 2) + "," + (height - cellSize * 7 - 1) + ")");
 
-svg.append("text")
-    .attr("transform", "translate(-6," + cellSize * 3.5 + ")rotate(-90)")
-    .style("text-anchor", "middle")
-    .text(function(d) { return d; });
+  
+  var months = ['Jan', 'Feb', 'Mar', 'Apr', 'May'];
+  var monthLabels = svg.append("g")
+      .attr("class", "month-labels");
+  monthLabels.selectAll(".month-label")
+      .data(months)
+      .enter().append("text")
+      .text(function (d) { return d; })
+      .attr("x", function (d, i) { return i * cellSize * 4.5 + cellSize * 4 / 2; })
+      .attr("y", -7)
+      .attr("text-anchor", "middle")
+      .attr("alignment-baseline", "middle")
+      .attr("class", "month-label")
+      .style("font-size", "20px");
+  
+  var daysOfWeek = ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun'];
+  var dayLabels = svg.append("g")
+      .attr("class", "day-labels");
+  
+  dayLabels.selectAll(".day-label")
+      .data(daysOfWeek)
+      .enter().append("text")
+      .text(function (d) { return d; })
+      .attr("x", -7)
+      .attr("y", function (d, i) { return i * cellSize + cellSize / 2 + 4; })
+      .attr("text-anchor", "end")
+      .attr("alignment-baseline", "middle")
+      .attr("class", "day-label")
+      .style("font-size", "15px");
 
 var rect = svg.selectAll(".day")
-    .data(function(d) { return d3.timeDays(new Date(d, 0, 1), new Date(d + 1, 0, 1)); })
-  .enter().append("rect")
+    .data(function(d) { return d3.timeDays(new Date(d, 0, 1), new Date(d, 5, 1)); })
+    .enter().append("rect")
     .attr("class", "day")
     .attr("width", cellSize)
     .attr("height", cellSize)
@@ -88,7 +107,7 @@ rect.append("title")
     .text(function(d) { return d; });
 
 svg.selectAll(".month")
-    .data(function(d) { return d3.timeMonths(new Date(d, 0, 1), new Date(d + 1, 0, 1) ); })
+    .data(function(d) { return d3.timeMonths(new Date(d, 0, 1), new Date(d, 5, 1) ); })
   .enter().append("path")
     .attr("class", "month")
     .attr("d", monthPath);
@@ -117,29 +136,56 @@ d3.csv("https://raw.githubusercontent.com/Pyrole-2002/D3_Lab3/main/yearly.csv", 
       let value = 0;
       d.forEach(function (obj) {
         if (obj.Type == "Holidays") {
-          value = 0.2;
+          value = 0;
         } else if (obj.Type == "Important Dates") {
-          value = 0.4;
+          value = 0.2;
         } else if (obj.Type == "Evaluations") {
-          value = 0.6;
+          value = 0.4;
         } else if (obj.Type == "Institute Events") {
-          value = 0.8;
+          value = 0.6;
         } else if (obj.Type == "Academic Events") {
-          value = 1;
+          value = 0.8;
         }
       });
       return value;
     })
     .map(spanDuration);
 
-  console.log('data', data);
-
   rect.filter(function(d) { return data.has(d); })
       .attr("class", function(d) {
         return "day " + color(data.get(d));
       })
-    .select("title")
-      .text(function(d) { return d + ": " + percent(data.get(d)); });
+      .on("mouseover", function(d) {
+        d3.select("body")
+          .style("cursor", "pointer")
+          .append("div")
+          .attr("class", "tooltip")
+          .style("position", "absolute")
+          .style("left", "1000px")
+          .style("top", "200px")
+          .style("z-index", "10")
+          .style("opacity", 1)
+          .style("background", "rgba(220, 220, 220, 1)")
+          .style("padding", "10px")
+          .style("color", "#262626")
+          .style("border-radius", "5px")
+          .style("border", "1px solid rgba(0, 0, 0, 0.24)")
+          .style("box-shadow", "rgba(0, 0, 0, 0.24) 0px 3px 8px")
+          .html(
+            `
+              <h2 style="font-size:25px">
+                ${spanDuration.find(x => x.Start === d).Activity}
+              </h2>
+              <h3 style="font-size:15px">
+                ${spanDuration.find(x => x.Start === d).Type}
+              </h3>
+            `
+          );
+      })
+      .on("mouseout", function() {
+        d3.select("body").style("cursor", "default");
+        d3.select(".tooltip").remove();
+      });
 });
 
 function monthPath(t0) {
